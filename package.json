@@ -1,0 +1,32 @@
+{
+  "name": "smarttrip-planner",
+  "version": "1.0.0",
+  "description": "Application to assist/monitor traveling trips",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon src/app.js",
+    "start": "node src/app.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/robertstahldev/smarttrip-planner.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/robertstahldev/smarttrip-planner/issues"
+  },
+  "homepage": "https://github.com/robertstahldev/smarttrip-planner#readme",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "morgan": "^1.10.1",
+    "mysql2": "^3.15.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}
