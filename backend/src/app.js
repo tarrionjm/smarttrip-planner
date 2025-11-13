@@ -54,6 +54,7 @@ app.use(
 /**
  * Health check
  */
+
 app.get('/health', (_req, res) => {
   res.json({ ok: true, message: 'SmartTrip backend running' });
 });
