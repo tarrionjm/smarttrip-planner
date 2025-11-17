@@ -12,7 +12,7 @@ CREATE TABLE `users` (
   `first_name` varchar(255),
   `last_name` varchar(255),
   `email` varchar(255) UNIQUE NOT NULL,
-  `password_hash` varchar(255) NOT NULL,
+  `password_hash` varchar(255),
   `created_at` timestamp DEFAULT (now())
 );
 
