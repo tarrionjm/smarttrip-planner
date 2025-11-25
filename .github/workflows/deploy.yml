@@ -3,14 +3,13 @@ name: Deploy to myflix
 on:
   push:
     branches:
-      - main  # deploy when main is updated
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # Not strictly needed for remote deploy, but good practice
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -23,8 +22,9 @@ jobs:
       - name: Add server to known_hosts
         run: |
           mkdir -p ~/.ssh
-          ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
+          # Add the SSH host key for custom port 1968
+          ssh-keyscan -p 1968 -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
 
       - name: Run deploy script on server
         run: |
-          ssh "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" "bash /opt/smarttrip/deploy.sh"
+          ssh -p 1968 "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" "bash /opt/smarttrip/deploy.sh"
