@@ -1,24 +1,50 @@
 const express = require('express');
 const router = express.Router();
+
 const { registerUser, loginUser } = require('../services/authService');
 const authenticateToken = require('../middleware/auth');
 const prisma = require('../../db/prisma');
 
 const jwt = require('jsonwebtoken');
+const { google } = require('googleapis');
 const { OAuth2Client } = require('google-auth-library');
 const { findOrCreateUserByGoogle } = require('../services/users');
-const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-// POST /api/auth/register
+const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
+
+// ---------------------------------------------------------------------------
+//  GOOGLE OAUTH CLIENTS
+//  - oauth2Client: for redirect-based OAuth (code -> tokens -> profile)
+//  - idTokenClient: (optional) for One Tap / ID token exchange (existing route)
+// ---------------------------------------------------------------------------
+const oauth2Client = new google.auth.OAuth2(
+  process.env.GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET,
+  process.env.GOOGLE_REDIRECT_URI
+);
+
+// This is used by the existing /google/exchange endpoint (ID token style)
+const idTokenClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+// ---------------------------------------------------------------------------
+//  POST /api/auth/register
+// ---------------------------------------------------------------------------
 router.post('/register', async (req, res) => {
   try {
     const { firstName, lastName, email, password } = req.body;
 
-  if (!email || !password) {
-    return res.status(400).json({ message: 'Email and password are required' });
-  }
+    if (!email || !password) {
+      return res
+        .status(400)
+        .json({ message: 'Email and password are required' });
+    }
 
-  const { user, token } = await registerUser({ firstName, lastName, email, password });
+    const { user, token } = await registerUser({
+      firstName,
+      lastName,
+      email,
+      password,
+    });
 
     return res.status(201).json({
       token,
@@ -26,7 +52,7 @@ router.post('/register', async (req, res) => {
         id: user.id,
         email: user.email,
         firstName: user.first_name,
-        lastName: user.last_name
+        lastName: user.last_name,
       },
     });
   } catch (err) {
@@ -38,14 +64,17 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// POST /api/auth/login
+// ---------------------------------------------------------------------------
+//  POST /api/auth/login (email + password)
+// ---------------------------------------------------------------------------
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // this is the "simple email + password" part:
     if (!email || !password) {
-      return res.status(400).json({ message: 'Email and password are required' });
+      return res
+        .status(400)
+        .json({ message: 'Email and password are required' });
     }
 
     const { user, token } = await loginUser({ email, password });
@@ -67,25 +96,115 @@ router.post('/login', async (req, res) => {
 });
 
 // ============================================================================
-//  GET /api/auth/google/start
-//  Placeholder for redirect-based Google OAuth.
-//  Frontends using Google One Tap / direct ID token exchange
-//  do not need this endpoint.
+//  REDIRECT-BASED GOOGLE OAUTH
 // ============================================================================
-router.get('/google/start', (_req, res) => {
-  res.status(501).json({
-    error: { code: 501, message: 'Redirect-based OAuth not implemented' },
+//
+//  GET /api/auth/google
+//    - Redirects the browser to Google's OAuth consent screen.
+//
+//  GET /api/auth/google/callback
+//    - Google redirects back here with ?code=...
+//    - We exchange the code for tokens, fetch profile, upsert user,
+//      issue JWT, then send back a tiny HTML page that:
+//         * stores the JWT in localStorage
+//         * redirects the user to the frontend homepage.
+//
+//  Requires env vars:
+//
+//    GOOGLE_CLIENT_ID
+//    GOOGLE_CLIENT_SECRET
+//    GOOGLE_REDIRECT_URI   (e.g. http://localhost:3000/api/auth/google/callback)
+//    JWT_SECRET
+//    FRONTEND_BASE_URL     (e.g. http://localhost:5173)
+//
+// ============================================================================
+
+// GET /api/auth/google  --> start Google login
+router.get('/google', (req, res) => {
+  const scopes = ['openid', 'profile', 'email'];
+
+  const authUrl = oauth2Client.generateAuthUrl({
+    access_type: 'offline',
+    prompt: 'consent',
+    scope: scopes,
   });
+
+  // Redirect the browser to Google's consent screen
+  res.redirect(authUrl);
+});
+
+// GET /api/auth/google/callback  --> handle Google OAuth callback
+router.get('/google/callback', async (req, res, next) => {
+  try {
+    const { code } = req.query;
+
+    if (!code) {
+      return res.status(400).send('Missing ?code from Google');
+    }
+
+    // 1) Exchange code for tokens
+    const { tokens } = await oauth2Client.getToken(code);
+    oauth2Client.setCredentials(tokens);
+
+    // 2) Fetch user profile from Google
+    const oauth2 = google.oauth2({ auth: oauth2Client, version: 'v2' });
+    const { data } = await oauth2.userinfo.get();
+    // data: { id, email, verified_email, name, etc..}
+
+    if (!data || !data.email) {
+      return res
+        .status(400)
+        .send('Could not retrieve email from Google account');
+    }
+
+    // Shape a payload similar to what findOrCreateUserByGoogle expects
+    const googlePayload = {
+      email: data.email,
+      given_name: data.given_name,
+      family_name: data.family_name,
+      name: data.name,
+      sub: data.id, // Google's user ID
+    };
+
+    // 3) Find or create user record in our DB
+    const user = await findOrCreateUserByGoogle(googlePayload);
+
+    // 4) Create app JWT
+    const token = jwt.sign(
+      { sub: user.id, email: user.email },
+      JWT_SECRET,
+      { expiresIn: '45m' }
+    );
+
+    // 5) Tiny HTML page: store token in localStorage, redirect to frontend
+    const frontendBase =
+      process.env.FRONTEND_BASE_URL || 'http://localhost:5173';
+    const redirectUrl = `${frontendBase}/homepage`; // adjust if your frontend uses a different path
+
+    res.send(`
+<!DOCTYPE html>
+<html>
+  <head><title>Signing you in...</title></head>
+  <body>
+    <script>
+      // Store JWT in localStorage
+      window.localStorage.setItem('smarttrip_token', ${JSON.stringify(token)});
+      // Redirect to the frontend
+      window.location.href = ${JSON.stringify(redirectUrl)};
+    </script>
+  </body>
+</html>
+    `);
+  } catch (err) {
+    next(err);
+  }
 });
 
 // ============================================================================
+//  OPTIONAL: ID TOKEN EXCHANGE ENDPOINT (for One Tap / direct idToken usage)
 //  POST /api/auth/google/exchange
-//  Frontend sends a Google ID token and receives an app-specific JWT.
-//  Flow:
-//    First, verify the Google ID token
-//    Next, find or create a user record in our DB
-//    Finally, issue a timed JWT for SmartTrip
 // ============================================================================
+
 router.post('/google/exchange', async (req, res, next) => {
   try {
     const { idToken } = req.body;
@@ -96,21 +215,19 @@ router.post('/google/exchange', async (req, res, next) => {
       });
     }
 
-    // Verify the ID token using Google's library
-    const ticket = await client.verifyIdToken({
+    // Verify the ID token
+    const ticket = await idTokenClient.verifyIdToken({
       idToken,
       audience: process.env.GOOGLE_CLIENT_ID,
     });
 
     const payload = ticket.getPayload(); // { sub, email, name, picture, etc }
 
-    // Create or update user record based on Google identity
     const user = await findOrCreateUserByGoogle(payload);
 
-    // Create our own timed app JWT
     const token = jwt.sign(
       { sub: user.id, email: user.email },
-      process.env.JWT_SECRET,
+      JWT_SECRET,
       { expiresIn: '45m' }
     );
 
@@ -144,18 +261,18 @@ router.get('/me', authenticateToken, async (req, res) => {
         email: true,
         first_name: true,
         last_name: true,
-        created_at: true
-      }
+        created_at: true,
+      },
     });
 
     if (!user) {
-      return res.status(404).json({ error: "User not found" });
+      return res.status(404).json({ error: 'User not found' });
     }
 
     res.json(user);
   } catch (error) {
-    console.error("Error retrieving profile:", error);
-    res.status(500).json({ error: "Failed to load profile" });
+    console.error('Error retrieving profile:', error);
+    res.status(500).json({ error: 'Failed to load profile' });
   }
 });
 
