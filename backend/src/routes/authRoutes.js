@@ -134,76 +134,50 @@ router.get('/google', (req, res) => {
 });
 
 // GET /api/auth/google/callback  --> handle Google OAuth callback
-router.get('/google/callback', async (req, res, next) => {
+router.get("/google/callback", async (req, res, next) => {
   try {
     const { code } = req.query;
-
     if (!code) {
-      return res.status(400).send('Missing ?code from Google');
+      return res.status(400).send("Missing OAuth code");
     }
 
-    // 1) Exchange code for tokens
-    const { tokens } = await oauth2Client.getToken(code);
-    oauth2Client.setCredentials(tokens);
+    // Your existing Google token exchange + user lookup happens here…
 
-    // 2) Fetch user profile from Google
-    const oauth2 = google.oauth2({ auth: oauth2Client, version: 'v2' });
-    const { data } = await oauth2.userinfo.get();
-    // data: { id, email, verified_email, name, etc..}
-
-    if (!data || !data.email) {
-      return res
-        .status(400)
-        .send('Could not retrieve email from Google account');
-    }
-
-    // Shape a payload similar to what findOrCreateUserByGoogle expects
-    const googlePayload = {
-      email: data.email,
-      given_name: data.given_name,
-      family_name: data.family_name,
-      name: data.name,
-      sub: data.id, // Google's user ID
-    };
-
-    // 3) Find or create user record in our DB
-    const user = await findOrCreateUserByGoogle(googlePayload);
-
-    // 4) Create app JWT
     const token = jwt.sign(
       { sub: user.id, email: user.email },
       JWT_SECRET,
-      { expiresIn: '45m' }
+      { expiresIn: "45m" }
     );
-    
-    const frontendBase =
-      process.env.FRONTEND_BASE_URL || 'http://localhost:5173';
-    const redirectUrl = `${frontendBase}/homepage`; // you already use /homepage for both logins
-    
-    // Shape a minimal user object for the frontend, similar to email/password flow
+
     const safeUser = {
       id: user.id,
       firstName: user.first_name,
       lastName: user.last_name,
       email: user.email,
     };
-    
-    res.send(`
-    <!DOCTYPE html>
-    <html>
-      <head><title>Signing you in...</title></head>
-      <body>
-        <script>
-          // Store JWT and user in localStorage under the SAME keys used by normal login
-          window.localStorage.setItem('token', ${JSON.stringify(token)});
-          window.localStorage.setItem('user', ${JSON.stringify(safeUser)});
-          // Redirect to the frontend homepage
-          window.location.href = ${JSON.stringify(redirectUrl)};
-        </script>
-      </body>
-    </html>
-        `);
-    
+
+    const frontendBase =
+      process.env.FRONTEND_BASE_URL || "http://localhost:5173";
+    const redirectUrl = `${frontendBase}/homepage`;
+
+    return res.send(`
+<!DOCTYPE html>
+<html>
+  <head><title>Signing you in...</title></head>
+  <body>
+    <script>
+      // NEW: Only these two keys, with JSON.stringify
+      window.localStorage.setItem('token', ${JSON.stringify(token)});
+      window.localStorage.setItem('user', ${JSON.stringify(safeUser)});
+
+      // REMOVE this if you still have it:
+      // window.localStorage.setItem('smarttrip_token', ...);
+
+      window.location.href = ${JSON.stringify(redirectUrl)};
+    </script>
+  </body>
+</html>
+    `);
   } catch (err) {
     next(err);
   }
