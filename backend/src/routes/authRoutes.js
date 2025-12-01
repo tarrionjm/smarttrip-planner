@@ -134,7 +134,6 @@ router.get('/google', (req, res) => {
 });
 
 // GET /api/auth/google/callback  --> handle Google OAuth callback
-// GET /api/auth/google/callback  --> handle Google OAuth callback
 router.get('/google/callback', async (req, res, next) => {
   try {
     const { code } = req.query;
