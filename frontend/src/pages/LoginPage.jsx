@@ -15,7 +15,7 @@ const LoginPage = () => {
     setLoading(true);
     try {
       // change URL if your backend uses a different port/path
-      const res = await fetch('http://localhost:3000/api/auth/login', {
+      const res = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
@@ -40,7 +40,7 @@ const LoginPage = () => {
       }
       setLoading(false);
       // navigate to homepage or upcoming trips
-      navigate('/homepage');
+      window.location.href = '/homepage';
     } catch (err) {
       setError('Network error. Please try again.');
       setLoading(false);

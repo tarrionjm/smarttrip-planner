@@ -12,6 +12,7 @@ const rateLimit = require("express-rate-limit");
 // Route modules
 const authRoutes = require("./routes/authRoutes");
 const tripRoutes = require("./routes/tripRoutes");
+const userRoutes = require("./routes/userRoutes");
 
 const app = express();
 
@@ -66,7 +67,9 @@ app.use(
       }
 
       // Otherwise block
-      return cb(new Error('Not allowed by CORS'));
+      const error = new Error('Not allowed by CORS');
+      error.status = 403;
+      return cb(error);
     },
     credentials: true,
   })
@@ -85,9 +88,11 @@ app.get("/health", (_req, res) => {
 //  API ROUTE MOUNTING
 //  /api/auth   -- login, register, session verification
 //  /api/trips  -- all trip, itinerary, and member functionality
+//  /api/users  -- returns user-based data from the db
 // ============================================================================
 app.use("/api/auth", authRoutes);
 app.use("/api/trips", tripRoutes);
+app.use("/api/users", userRoutes);
 
 // ============================================================================
 //  404 NOT FOUND HANDLER

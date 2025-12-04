@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { FaUser, FaEnvelope, FaTrash } from 'react-icons/fa'
+import { API_BASE_URL } from '../utils/api'
 
 const ProfilePage = () => {
   const navigate = useNavigate()
@@ -24,7 +25,7 @@ const ProfilePage = () => {
         }
 
         // Fetch pattern similar to login - backend should create this endpoint
-        const res = await fetch('http://localhost:3000/api/users/me', {
+        const res = await fetch(`${API_BASE_URL}/auth/me`, {
           method: 'GET',
           headers: { 
             'Authorization': `Bearer ${token}`

@@ -47,35 +47,46 @@ model invites {
 }
 
 model itinerary_items {
-  id                                      Int       @id @default(autoincrement())
+  id                                      Int                   @id @default(autoincrement())
   trip_id                                 Int
-  day_index                               Int?
-  title                                   String    @db.VarChar(255)
-  description                             String?   @db.Text
-  start_time                              DateTime? @db.Time(0)
-  end_time                                DateTime? @db.Time(0)
-  duration_hours                          Decimal?  @db.Decimal(5, 2)
-  location_name                           String?   @db.VarChar(255)
-  google_place_id                         String?   @db.VarChar(255)
-  activity_type                           String?   @db.VarChar(255)
-  participants_json                       Json?
-  equipment_list                          Json?
-  food_plan                               String?   @db.Text
-  transport_mode                          String?   @db.VarChar(255)
-  notes                                   String?   @db.Text
+  item_type                               String?               @db.VarChar(50)
+  title                                   String                @db.VarChar(255)
+  description                             String?               @db.Text
+  start_time                              DateTime?             @db.DateTime(0)
+  end_time                                DateTime?             @db.DateTime(0)
+  venue                                   String?               @db.VarChar(255)
+  address                                 String?               @db.Text
+  phone                                   String?               @db.VarChar(50)
+  website                                 String?               @db.VarChar(255)
+  email                                   String?               @db.VarChar(255)
+  provider                                String?               @db.VarChar(100)
+  confirmation_number                     String?               @db.VarChar(50)
+  total_cost                              Decimal?              @db.Decimal(10, 2)
+  number_of_guests                        Int?
+  location_name                           String?               @db.VarChar(255)
+  google_place_id                         String?               @db.VarChar(255)
+  activity_type                           String?               @db.VarChar(255)
+  notes                                   String?               @db.Text
   sort_order                              Int?
   created_by                              Int?
-  created_at                              DateTime? @default(dbgenerated("(now())")) @db.Timestamp(0)
+  created_at                              DateTime?             @default(dbgenerated("(now())")) @db.Timestamp(0)
   updated_by                              Int?
-  updated_at                              DateTime? @db.Timestamp(0)
-  trips                                   trips     @relation(fields: [trip_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "itinerary_items_ibfk_1")
-  users_itinerary_items_created_byTousers users?    @relation("itinerary_items_created_byTousers", fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "itinerary_items_ibfk_2")
-  users_itinerary_items_updated_byTousers users?    @relation("itinerary_items_updated_byTousers", fields: [updated_by], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "itinerary_items_ibfk_3")
+  updated_at                              DateTime?             @db.Timestamp(0)
+  activity_itinerary                      activity_itinerary?
+  car_rental_itinerary                    car_rental_itinerary?
+  flight_itinerary                        flight_itinerary?
+  trips                                   trips                 @relation(fields: [trip_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "itinerary_items_ibfk_1")
+  users_itinerary_items_created_byTousers users?                @relation("itinerary_items_created_byTousers", fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "itinerary_items_ibfk_2")
+  users_itinerary_items_updated_byTousers users?                @relation("itinerary_items_updated_byTousers", fields: [updated_by], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "itinerary_items_ibfk_3")
+  lodging_itinerary                       lodging_itinerary?
 
   @@index([trip_id], map: "itinerary_items_index_3")
   @@index([created_by], map: "itinerary_items_index_4")
-  @@index([trip_id, day_index], map: "itinerary_items_index_5")
+  @@index([trip_id], map: "itinerary_items_index_5")
   @@index([updated_by], map: "updated_by")
+  @@index([item_type], map: "idx_item_type")
+  @@index([trip_id, start_time, item_type], map: "idx_trip_timeline")
+  @@index([trip_id, item_type], map: "idx_trip_type")
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
@@ -101,6 +112,7 @@ model trips {
   notes           String?           @db.Text
   created_at      DateTime?         @default(dbgenerated("(now())")) @db.Timestamp(0)
   updated_at      DateTime?         @db.Timestamp(0)
+  name            String?           @db.VarChar(255)
   cost_items      cost_items[]
   invites         invites[]
   itinerary_items itinerary_items[]
@@ -123,4 +135,76 @@ model users {
   itinerary_items_itinerary_items_updated_byTousers itinerary_items[] @relation("itinerary_items_updated_byTousers")
   trip_members                                      trip_members[]
   trips                                             trips[]
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model activity_itinerary {
+  id                           Int             @id @default(autoincrement())
+  itinerary_item_id            Int             @unique(map: "itinerary_item_id")
+  activity_type                String?         @db.VarChar(100)
+  difficulty_level             String?         @db.VarChar(50)
+  meeting_location             String?         @db.VarChar(255)
+  meeting_instructions         String?         @db.Text
+  certification_required       Boolean?        @default(false)
+  certification_details        String?         @db.Text
+  min_age                      Int?
+  max_participants             Int?
+  equipment_needed             String?         @db.Text
+  dress_code                   String?         @db.VarChar(255)
+  booking_required             Boolean?        @default(false)
+  additional_costs             Decimal?        @db.Decimal(10, 2)
+  additional_costs_description String?         @db.Text
+  created_at                   DateTime?       @default(dbgenerated("(now())")) @db.Timestamp(0)
+  updated_at                   DateTime?       @db.Timestamp(0)
+  itinerary_items              itinerary_items @relation(fields: [itinerary_item_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "activity_itinerary_ibfk_1")
+
+  @@index([itinerary_item_id], map: "idx_itinerary_item")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model car_rental_itinerary {
+  id                Int             @id @default(autoincrement())
+  itinerary_item_id Int             @unique(map: "itinerary_item_id")
+  pickup_location   String?         @db.VarChar(255)
+  pickup_address    String?         @db.Text
+  pickup_phone      String?         @db.VarChar(50)
+  dropoff_location  String?         @db.VarChar(255)
+  dropoff_address   String?         @db.Text
+  dropoff_phone     String?         @db.VarChar(50)
+  car_type          String?         @db.VarChar(100)
+  created_at        DateTime?       @default(dbgenerated("(now())")) @db.Timestamp(0)
+  updated_at        DateTime?       @db.Timestamp(0)
+  itinerary_items   itinerary_items @relation(fields: [itinerary_item_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "car_rental_itinerary_ibfk_1")
+
+  @@index([itinerary_item_id], map: "idx_itinerary_item")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model flight_itinerary {
+  id                Int             @id @default(autoincrement())
+  itinerary_item_id Int             @unique(map: "itinerary_item_id")
+  flight_number     String?         @db.VarChar(20)
+  airline           String?         @db.VarChar(100)
+  departure_airport String?         @db.VarChar(10)
+  arrival_airport   String?         @db.VarChar(10)
+  created_at        DateTime?       @default(dbgenerated("(now())")) @db.Timestamp(0)
+  updated_at        DateTime?       @db.Timestamp(0)
+  itinerary_items   itinerary_items @relation(fields: [itinerary_item_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "flight_itinerary_ibfk_1")
+
+  @@index([itinerary_item_id], map: "idx_itinerary_item")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model lodging_itinerary {
+  id                Int             @id @default(autoincrement())
+  itinerary_item_id Int             @unique(map: "itinerary_item_id")
+  lodging_type      String?         @db.VarChar(100)
+  rooms             Int?
+  beds              String?         @db.VarChar(100)
+  price_per_room    Decimal?        @db.Decimal(10, 2)
+  created_at        DateTime?       @default(dbgenerated("(now())")) @db.Timestamp(0)
+  updated_at        DateTime?       @db.Timestamp(0)
+  itinerary_items   itinerary_items @relation(fields: [itinerary_item_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "lodging_itinerary_ibfk_1")
+
+  @@index([itinerary_item_id], map: "idx_itinerary_item")
 }

@@ -108,7 +108,7 @@ const Navbar = () => {
               {showProfileDropdown && (
                 <div className="absolute right-0 mt-3 w-64 bg-white border-4 border-black rounded-lg shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] z-50">
                   <div className="p-4 border-b-4 border-black">
-                    <p className="font-black text-lg uppercase">{user.firstName} {user.lastName}</p>
+                    <p className="font-black text-lg uppercase"> {user.firstName} {user.lastName}</p>
                   </div>
                   <div className="p-2">
                     <button

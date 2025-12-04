@@ -50,8 +50,8 @@ const RecentUpcomingTrips = () => {
                 {/* Neo Brutalism Card */}
                 <div className="bg-white border-4 border-black rounded-lg p-4 sm:p-6 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] sm:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
                   <div className="mb-4 pb-4 border-b-4 border-black">
-                    <h3 className="text-xl sm:text-2xl font-black mb-2 uppercase break-words">{trip.tripName}</h3>
-                    <p className="text-xs sm:text-sm font-bold uppercase text-gray-700 break-words">📍 {trip.tripLocation}</p>
+                    <h3 className="text-xl sm:text-2xl font-black mb-2 uppercase break-words">{trip.name}</h3>
+                    <p className="text-xs sm:text-sm font-bold uppercase text-gray-700 break-words">📍 {trip.location}</p>
                   </div>
                   
                   <div className="mb-4">

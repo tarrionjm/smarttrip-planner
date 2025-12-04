@@ -29,7 +29,7 @@ const idTokenClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 // ---------------------------------------------------------------------------
 //  POST /api/auth/register
 // ---------------------------------------------------------------------------
-router.post('/register', async (req, res) => {
+router.post('/register', async (req, res, next) => {
   try {
     const { firstName, lastName, email, password } = req.body;
 
@@ -56,18 +56,18 @@ router.post('/register', async (req, res) => {
       },
     });
   } catch (err) {
-    console.error('Register error:', err.message);
-    if (err.message.includes('Email already in use')) {
-      return res.status(409).json({ message: err.message });
-    }
-    return res.status(500).json({ message: 'Internal server error' });
+     console.error('Register error:', err.message);
+     if (err.message.includes('Email already in use')) {
+       err.status = 409;
+     }
+     return next(err);
   }
 });
 
 // ---------------------------------------------------------------------------
 //  POST /api/auth/login (email + password)
 // ---------------------------------------------------------------------------
-router.post('/login', async (req, res) => {
+router.post('/login', async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
@@ -83,16 +83,19 @@ router.post('/login', async (req, res) => {
       token,
       user: {
         id: user.id,
+        firstName: user.first_name,
+        lastName: user.last_name,
         email: user.email,
       },
     });
   } catch (err) {
-    console.error('Login error:', err.message);
-    if (err.message.includes('Invalid email or password')) {
-      return res.status(401).json({ message: 'Invalid email or password' });
-    }
-    return res.status(500).json({ message: 'Internal server error' });
-  }
+      console.error('Login error:', err.message);
+      if (err.message.includes('Invalid email or password')) {
+        err.status = 401;
+        err.message = 'Invalid email or password';
+      }
+      return next(err);
+   }
 });
 
 // ============================================================================
@@ -263,9 +266,13 @@ router.post('/google/exchange', async (req, res, next) => {
 //  Returns the current authenticated user's info based on the JWT payload.
 // ============================================================================
 
-router.get('/me', authenticateToken, async (req, res) => {
+router.get('/me', authenticateToken, async (req, res, next) => {
   try {
-    const userId = req.user.sub;
+    const userId = Number(req.user.sub);
+
+    if (Number.isNaN(userId)) {
+      return res.status(400).json({ error: 'Invalid user id in token' });
+    }
 
     const user = await prisma.users.findUnique({
       where: { id: userId },
@@ -274,7 +281,6 @@ router.get('/me', authenticateToken, async (req, res) => {
         email: true,
         first_name: true,
         last_name: true,
-        created_at: true,
       },
     });
 
@@ -282,10 +288,17 @@ router.get('/me', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    res.json(user);
+    res.json({
+      id: user.id,
+      firstName: user.first_name,
+      lastName: user.last_name,
+      email: user.email,
+    });
   } catch (error) {
-    console.error('Error retrieving profile:', error);
-    res.status(500).json({ error: 'Failed to load profile' });
+      console.error('Error retrieving profile:', error);
+      error.status = 500;
+      error.message = 'Failed to load profile'; 
+      return next(error);   
   }
 });
 

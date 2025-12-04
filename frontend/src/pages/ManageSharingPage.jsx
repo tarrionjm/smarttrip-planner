@@ -3,6 +3,7 @@ import React, { useContext, useState, useEffect, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { FaUser, FaUserPlus, FaTimes, FaArrowLeft } from 'react-icons/fa'
 import { TripContext } from '../context/TripContext'
+import { API_BASE_URL } from '../utils/api';
 
 const ManageSharingPage = () => {
   const { tripId } = useParams()
@@ -99,7 +100,7 @@ const ManageSharingPage = () => {
 
       // Fetch trip members
       // Backend should return: [{ id, user_id, first_name, last_name, email, role }, ...]
-      const membersRes = await fetch(`http://localhost:3000/api/trips/${tripId}/members`, {
+      const membersRes = await fetch(`${API_BASE_URL}/trips/${tripId}/members`, {
         method: 'GET',
         headers: { 
           'Authorization': `Bearer ${token}`,
@@ -117,7 +118,7 @@ const ManageSharingPage = () => {
 
       // Fetch all users for search
       // Backend should return: [{ id, firstName, lastName, email }, ...]
-      const usersRes = await fetch('http://localhost:3000/api/users', {
+      const usersRes = await fetch(`${API_BASE_URL}/users`, {
         method: 'GET',
         headers: { 
           'Authorization': `Bearer ${token}`,
@@ -143,7 +144,7 @@ const ManageSharingPage = () => {
       // Set current user's role from members list
       if (storedUser) {
         const user = JSON.parse(storedUser)
-        const userMember = membersData.find(m => m.user_id === user.id)
+        const userMember = membersData.find(m => m.userId === user.id)
         setCurrentUserRole(userMember?.role || null)
       }
     } catch (err) {
@@ -166,7 +167,7 @@ const ManageSharingPage = () => {
 
       // Add trip member
       // Backend should accept: { email: string, role: string }
-      const res = await fetch(`http://localhost:3000/api/trips/${tripId}/members`, {
+      const res = await fetch(`${API_BASE_URL}/trips/${tripId}/members`, {
         method: 'POST',
         headers: { 
           'Authorization': `Bearer ${token}`,
@@ -184,7 +185,7 @@ const ManageSharingPage = () => {
       }
 
       // Refresh members list
-      const membersRes = await fetch(`http://localhost:3000/api/trips/${tripId}/members`, {
+      const membersRes = await fetch(`${API_BASE_URL}/trips/${tripId}/members`, {
         method: 'GET',
         headers: { 
           'Authorization': `Bearer ${token}`,
@@ -227,7 +228,7 @@ const ManageSharingPage = () => {
       }
 
       // Remove trip member
-      const res = await fetch(`http://localhost:3000/api/trips/${tripId}/members/${memberId}`, {
+      const res = await fetch(`${API_BASE_URL}/trips/${tripId}/members/${memberId}`, {
         method: 'DELETE',
         headers: { 
           'Authorization': `Bearer ${token}`,
@@ -241,7 +242,7 @@ const ManageSharingPage = () => {
       }
 
       // Refresh members list
-      const membersRes = await fetch(`http://localhost:3000/api/trips/${tripId}/members`, {
+      const membersRes = await fetch(`${API_BASE_URL}/trips/${tripId}/members`, {
         method: 'GET',
         headers: { 
           'Authorization': `Bearer ${token}`,
@@ -275,7 +276,7 @@ const ManageSharingPage = () => {
 
       // Update member role
       // Backend should accept: { role: string }
-      const res = await fetch(`http://localhost:3000/api/trips/${tripId}/members/${memberId}`, {
+      const res = await fetch(`${API_BASE_URL}/trips/${tripId}/members/${memberId}`, {
         method: 'PATCH',
         headers: { 
           'Authorization': `Bearer ${token}`,
@@ -290,7 +291,7 @@ const ManageSharingPage = () => {
       }
 
       // Refresh members list
-      const membersRes = await fetch(`http://localhost:3000/api/trips/${tripId}/members`, {
+      const membersRes = await fetch(`${API_BASE_URL}/trips/${tripId}/members`, {
         method: 'GET',
         headers: { 
           'Authorization': `Bearer ${token}`,
@@ -452,7 +453,7 @@ const ManageSharingPage = () => {
           
           <div className="mb-6 p-4 bg-gray-100 border-2 border-black rounded">
             <p className="font-bold text-sm uppercase text-gray-700">Trip</p>
-            <p className="font-black text-lg">{trip?.tripName || 'Unknown Trip'}</p>
+            <p className="font-black text-lg">{trip?.name || 'Unknown Trip'}</p>
           </div>
 
           {error && (

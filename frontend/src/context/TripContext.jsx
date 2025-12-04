@@ -157,14 +157,7 @@ export const TripProvider = ({ children }) => {
       console.error('Failed to create trip:', err)
       setError(err.message)
       
-      // Fallback to local state if backend fails
-      const localTrip = {
-        id: Date.now(),
-        ...tripData,
-        createdAt: new Date().toISOString()
-      }
-      setUpcomingTrips(prev => [localTrip, ...prev])
-      return localTrip
+      throw err
     } finally {
       setLoading(false)
     }
@@ -321,9 +314,9 @@ export const TripProvider = ({ children }) => {
     try {
       const updatedItem = await updateItineraryItem(tripId, itemId, {
         item_type: itemType,
-        item_name: itemData.name || itemData.activityName || itemData.lodgingName || `${itemType}`,
-        start_date: itemData.startDate || itemData.departure || itemData.pickupDate,
-        end_date: itemData.endDate || itemData.dropoffDate,
+        itemName: itemData.name || itemData.activityName || itemData.lodgingName || `${itemType}`,
+        startDate: itemData.startDate || itemData.departure || itemData.pickupDate,
+        endDate: itemData.endDate || itemData.dropoffDate,
         details: itemData
       })
       

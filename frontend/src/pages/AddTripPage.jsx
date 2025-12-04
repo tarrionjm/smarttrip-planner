@@ -7,9 +7,9 @@ const AddTripPage = () => {
   const navigate = useNavigate()
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
-  const [tripName, setTripName] = useState('')
-  const [tripLocation, setTripLocation] = useState('')
-  const [description, setDescription] = useState('')
+  const [name, setTripName] = useState('')
+  const [location, setTripLocation] = useState('')
+  const [notes, setDescription] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
   const _ctx = useContext(TripContext) || {}
@@ -49,11 +49,11 @@ const AddTripPage = () => {
     
     // Create trip object with all data
     const tripData = {
-      tripName,
-      tripLocation,
+      name,
+      location,
       startDate,
       endDate,
-      description,
+      notes,
       flightData,
       carRentalData,
       activityData,
@@ -104,7 +104,7 @@ const AddTripPage = () => {
                 type="text"
                 id="tripName"
                 name="tripName"
-                value={tripName}
+                value={name}
                 onChange={(e) => setTripName(e.target.value)}
                 className="border-4 border-black rounded w-full py-2 sm:py-3 px-3 sm:px-4 text-sm sm:text-base font-bold focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black"
                 placeholder="eg. Family Holiday"
@@ -120,7 +120,7 @@ const AddTripPage = () => {
                 type="text"
                 id="title"
                 name="title"
-                value={tripLocation}
+                value={location}
                 onChange={(e) => setTripLocation(e.target.value)}
                 className="border-4 border-black rounded w-full py-3 px-4 font-bold focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black"
                 placeholder="eg. Hagerstown, Maryland"
@@ -185,7 +185,7 @@ const AddTripPage = () => {
               <textarea
                 id="description"
                 name="description"
-                value={description}
+                value={notes}
                 onChange={(e) => setDescription(e.target.value)}
                 className="border-4 border-black rounded w-full py-3 px-4 font-bold focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black"
                 rows="4"

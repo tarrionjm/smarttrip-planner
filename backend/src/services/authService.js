@@ -42,6 +42,13 @@ async function loginUser({ email, password }) {
   // 1) Find user by email
   const user = await prisma.users.findUnique({
     where: { email },
+    select: {
+    id: true,
+    email: true,
+    password_hash: true, // used for bcrypt
+    first_name: true,
+    last_name: true,
+  }
   });
 
   // Either no user, or a user with no password_hash set
