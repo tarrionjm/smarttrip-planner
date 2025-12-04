@@ -142,7 +142,7 @@ router.get('/google/callback', async (req, res, next) => {
     const { code } = req.query;
 
     if (!code) {
-      return res.status(400).send('Missing OAuth code');
+      return res.status(400).send('Missing ?code from Google');
     }
 
     // 1) Exchange code for tokens

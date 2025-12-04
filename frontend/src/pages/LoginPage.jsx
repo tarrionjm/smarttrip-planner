@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { FaGoogle } from 'react-icons/fa'
+import { API_BASE_URL } from '../utils/api'
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
@@ -208,7 +209,8 @@ const LoginPage = () => {
            <div>
               <button
                 className="bg-green-400 text-black font-black uppercase py-3 px-6 rounded w-full border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all"
-                type="submit"
+                type="button"
+                onClick={() => { window.location.href = `${API_BASE_URL}/auth/google`; }}
               >
                 <FaGoogle className="inline text-xl mr-2 mb-1" /> Google
               </button>
