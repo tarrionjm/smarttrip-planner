@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { API_BASE_URL } from '../utils/api';
 
 const SignUpPage = () => {
   const [firstName, setFirstName] = useState("");
@@ -25,14 +24,8 @@ const SignUpPage = () => {
         body: JSON.stringify({ firstName, lastName, email, password })
       });
       if (!res.ok) {
-        let message = 'Signup failed.';
-        try {
-          const data = await res.json();
-          message = data.message || message;
-        } catch (err) {
-          console.error('Error parsing signup error response:', err);
-        }
-        setError(message);
+        const data = await res.json();
+        setError(data.message || 'Signup failed.');
         return;
       }      
       navigate('/');
