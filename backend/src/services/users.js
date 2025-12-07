@@ -25,7 +25,7 @@ async function findOrCreateUserByGoogle(googlePayload) {
   });
 
   if (user) {
-    // Optionally: update first/last name if Google has newer info
+    // User exists - just return them
     return user;
   }
 
@@ -35,7 +35,8 @@ async function findOrCreateUserByGoogle(googlePayload) {
       email,
       first_name: given_name || name?.split(' ')[0] || null,
       last_name: family_name || name?.split(' ').slice(1).join(' ') || null,
-      password_hash: null, // password is not used for Google accounts
+      google_id: googleId,  // ← ADD THIS LINE!
+      password_hash: null,  // password is not used for Google accounts
     }
   });
 
