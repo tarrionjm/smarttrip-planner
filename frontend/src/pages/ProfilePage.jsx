@@ -64,7 +64,7 @@ const ProfilePage = () => {
       const token = localStorage.getItem('token')
       
       // Fetch pattern similar to login - backend should create this endpoint
-      const res = await fetch('/api/users/me', {
+      const res = await fetch('${API_BASE_URL}/users/me', {
         method: 'DELETE',
         headers: { 
           'Authorization': `Bearer ${token}`
