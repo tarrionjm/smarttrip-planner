@@ -128,7 +128,8 @@ model users {
   first_name                                        String?           @db.VarChar(255)
   last_name                                         String?           @db.VarChar(255)
   email                                             String            @unique(map: "email") @db.VarChar(255)
-  password_hash                                     String            @db.VarChar(255)
+  password_hash                                     String?           @db.VarChar(255)  // ← Added ? to make nullable
+  google_id                                         String?           @unique @db.VarChar(255)  // ← Added this line
   created_at                                        DateTime?         @default(dbgenerated("(now())")) @db.Timestamp(0)
   cost_items                                        cost_items[]
   itinerary_items_itinerary_items_created_byTousers itinerary_items[] @relation("itinerary_items_created_byTousers")
