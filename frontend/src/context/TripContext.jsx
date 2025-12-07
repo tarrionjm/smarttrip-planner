@@ -45,6 +45,8 @@ export const TripProvider = ({ children }) => {
     },
     rentalInfo: {
       carType: '',
+      mileageCharges: '',
+      carDetails: '',
     }
   })
 
@@ -114,12 +116,34 @@ export const TripProvider = ({ children }) => {
       // Create car rental itinerary item
       if (carRentalData?.title) {
         await createItineraryItem(tripId, {
-          itemType: 'carRental',
-          title: `Car Rental - ${carRentalData.title}`,
+          itemType: 'car_rental',   // 🔧 MUST match DB constraint
+          title: carRentalData.title,
           startDate: carRentalData.pickupDate,
+          startTime: carRentalData.pickupTime || null,
           endDate: carRentalData.dropoffDate,
-          details: carRentalData
-        })
+          endTime: carRentalData.dropoffTime || null,
+          website: carRentalData.website || null,
+          email: carRentalData.email || null,
+          confirmationNumber: carRentalData.confirmationNumber || null,
+          totalCost: carRentalData.totalCost || null,
+          details: {
+            pickupLocation: {
+              location: carRentalData.pickupLocation?.location || null,
+              address:  carRentalData.pickupLocation?.address  || null,
+              phone:    carRentalData.pickupLocation?.phone    || null,
+            },
+            dropoffLocation: {
+              location: carRentalData.dropoffLocation?.location || null,
+              address:  carRentalData.dropoffLocation?.address  || null,
+              phone:    carRentalData.dropoffLocation?.phone    || null,
+            },
+            rentalInfo: {
+              carType:        carRentalData.rentalInfo?.carType        || null,
+              mileageCharges: carRentalData.rentalInfo?.mileageCharges || null,
+              carDetails:     carRentalData.rentalInfo?.carDetails     || null,
+            },
+          },
+        });
       }
       
       // Create activity itinerary items
@@ -219,50 +243,63 @@ export const TripProvider = ({ children }) => {
       const activities = []
       const lodgings = []
       
-      items.forEach(item => {
+      items.forEach((item) => {
         switch (item.itemType) {
           case 'flight':
             flights.push({
               id: item.id,
               title: item.title,
               departure: item.startDate,
-              ...item.details
-            })
-            break
-          case 'carRental':
-            carRental = {
-              id: item.id,
-              ...item.details
-            }
-            break
-          case 'activity':
-            activities.push({
-              id: item.id,
-              title: item.title,
-              startDate: item.startDate,
-              endDate: item.endDate,
-              ...item.details
-            })
-            break
-          case 'lodging':
-            lodgings.push({
-              id: item.id,
-              title: item.title,
-              startDate: item.startDate,
-              endDate: item.endDate,
-              ...item.details
-            })
-            break
-          default:
-            break
-        }
-      })
+              ...item.details,
+            });
+            break;
+
+            case 'car_rental':   // 🔧 MUST match DB + backend
+              carRental = {
+                id: item.id,
+                title: item.title,
+                pickupDate:  item.startDate,
+                pickupTime:  item.startTime,
+                dropoffDate: item.endDate,
+                dropoffTime: item.endTime,
+                website:            item.website,
+                email:              item.email,
+                confirmationNumber: item.confirmationNumber,
+                totalCost:          item.totalCost,
+                // bring back nested details from backend
+                ...item.details,   // pickupLocation, dropoffLocation, rentalInfo
+              };
+              break;
+
+            case 'activity':
+              activities.push({
+                id: item.id,
+                title: item.title,
+                startDate: item.startDate,
+                endDate: item.endDate,
+                ...item.details,
+              });
+              break;
+
+            case 'lodging':
+              lodgings.push({
+                id: item.id,
+                title: item.title,
+                startDate: item.startDate,
+                endDate: item.endDate,
+                ...item.details,
+              });
+              break;
+            default:
+              break;
+          }
+        });
       
       // Update context state
       if (flights.length > 0) {
         setFlightData({ flights, totalCost: flights[0]?.totalCost || '' })
       }
-      if (carRental.length > 0) {
+      if (carRental) {
         setCarRentalData(carRental)
       }
       if (activities.length > 0) {

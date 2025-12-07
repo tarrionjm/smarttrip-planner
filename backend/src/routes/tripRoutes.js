@@ -429,8 +429,6 @@ router.get("/:tripId/itinerary", auth, async (req, res, next) => {
 
     const itemIds = items.map((i) => i.id);
 
-    console.log(`Item IDs: ${itemIds}`);
-
     // Fetch child records for all items
     const [flights, carRentals, lodging, activities] = await Promise.all([
     prisma.flight_itinerary.findMany({
@@ -472,33 +470,30 @@ router.get("/:tripId/itinerary", auth, async (req, res, next) => {
     prisma.activity_itinerary.findMany({
       where: { itinerary_item_id: { in: itemIds } },
       select: {
+        // UPDATE DB: Uncomment here when db aligned with frontend or vv
         id: true,
         itinerary_item_id: true,
         activity_type: true,
-        difficulty_level: true,
-        meeting_location: true,
-        meeting_instructions: true,
-        certification_required: true,
-        certification_details: true,
-        min_age: true,
-        max_participants: true,
-        equipment_needed: true,
-        dress_code: true,
-        booking_required: true,
-        additional_costs: true,
-        additional_costs_description: true,
+        // difficulty_level: true,
+        //meeting_location: true,
+        //meeting_instructions: true,
+        //certification_required: true,
+        //certification_details: true,
+        //min_age: true,
+        //max_participants: true,
+        //equipment_needed: true,
+        //dress_code: true,
+        //booking_required: true,
+        //additional_costs: true,
+        //additional_costs_description: true,
       },
     }),
   ]); 
-
-    console.log(`Check it out: ${flights}`);
 
     // Build lookup maps keyed by itinerary_item_id
     const flightMap = {};
     for (const f of flights) {
       flightMap[f.itinerary_item_id] = {
-        id: f.id,
-        itineraryItemId: f.itinerary_item_id,
         flightNumber: f.flight_number,
         airline: f.airline,
         departureAirport: f.departure_airport,
@@ -506,31 +501,30 @@ router.get("/:tripId/itinerary", auth, async (req, res, next) => {
       };
     }
 
-    let mileageCharges = null;
-    let carDetails = null;
-
     const carRentalMap = {};
     for (const c of carRentals) {
       carRentalMap[c.itinerary_item_id] = {
-        id: c.id,
-        itineraryItemId: c.itinerary_item_id,
-        pickupLocation: c.pickup_location,
-        pickupAddress: c.pickup_address,
-        pickupPhone: c.pickup_phone,
-        dropoffLocation: c.dropoff_location,
-        dropoffAddress: c.dropoff_address,
-        dropoffPhone: c.dropoff_phone,
-        carType: c.car_type,
-        mileageCharges: mileageCharges,
-        carDetails: carDetails,
+        pickupLocation: {
+          location: c.pickup_location,
+          address: c.pickup_address,
+          phone: c.pickup_phone
+        },
+        dropoffLocation: {
+          location: c.dropoff_location,
+          address: c.dropoff_address,
+          phone: c.dropoff_phone
+        },
+        rentalInfo: {
+          carType: c.car_type,
+          mileageCharges: null,
+          carDetails: null
+        }
       };
     }
 
     const lodgingMap = {};
     for (const l of lodging) {
       lodgingMap[l.itinerary_item_id] = {
-        id: l.id,
-        itineraryItemId: l.itinerary_item_id,
         lodgingType: l.lodging_type,
         rooms: l.rooms,
         beds: l.beds,
@@ -541,25 +535,22 @@ router.get("/:tripId/itinerary", auth, async (req, res, next) => {
     const activityMap = {};
     for (const a of activities) {
       activityMap[a.itinerary_item_id] = {
-        id: a.id,
-        itineraryItemId: a.itinerary_item_id,
-        activityType: a.activity_type,
-        difficultyLevel: a.difficulty_level,
-        meetingLocation: a.meeting_location,
-        meetingInstructions: a.meeting_instructions,
-        certificationRequired: a.certification_required,
-        certificationDetails: a.certification_details,
-        minAge: a.min_age,
-        maxParticipants: a.max_participants,
-        equipmentNeeded: a.equipment_needed,
-        dressCode: a.dress_code,
-        bookingRequired: a.booking_required,
-        additionalCosts: a.additional_costs,
-        additionalCostsDescription: a.additional_costs_description,
+        // UPDATE DB: Uncomment here when db aligned with frontend or vv
+        //activityType: a.activity_type,
+        //difficultyLevel: a.difficulty_level,
+        //meetingLocation: a.meeting_location,
+        //meetingInstructions: a.meeting_instructions,
+        //certificationRequired: a.certification_required,
+        //certificationDetails: a.certification_details,
+        //minAge: a.min_age,
+        //maxParticipants: a.max_participants,
+        //equipmentNeeded: a.equipment_needed,
+        //dressCode: a.dress_code,
+        //bookingRequired: a.booking_required,
+        //additionalCosts: a.additional_costs,
+        //additionalCostsDescription: a.additional_costs_description,
       };
     }
-
-    console.log('✅ Itinerary items found:', items);
 
     const response = items.map((item) => {
       const flight = flightMap[item.id] || null;
@@ -578,6 +569,7 @@ router.get("/:tripId/itinerary", auth, async (req, res, next) => {
       if (activity) responseDetails = activity;
 
       return {
+        // UPDATE DB: Uncomment here when db aligned with frontend or vv
         id: item.id,
         itemType: item.item_type,
         title: item.title,
@@ -591,22 +583,20 @@ router.get("/:tripId/itinerary", auth, async (req, res, next) => {
         phone: item.phone,
         website: item.website,
         email: item.email,
-        provider: item.provider,
+        //provider: item.provider,
         confirmationNumber: item.confirmation_number,
         totalCost: item.total_cost,
         numberOfGuests: item.number_of_guests,
-        locationName: item.location_name,
-        activityType: item.activity_type,
-        googlePlaceId: item.google_place_id,
+        //locationName: item.location_name,
+        //activityType: item.activity_type,
+        //googlePlaceId: item.google_place_id,
         notes: item.notes,
-        responseDetails
+        details: responseDetails
       };
     });
 
-    console.log(`Here is ${response}`);
-
     res.json(response);
-  } catch (err) {
+    } catch (err) {
     next(err);
   }
 });
@@ -638,6 +628,7 @@ router.post("/:tripId/itinerary", auth, async (req, res, next) => {
     }
 
     const {
+      // UPDATE DB: Uncomment here when db aligned with frontend or vv
       itemType,
       title,
       description,
@@ -650,13 +641,13 @@ router.post("/:tripId/itinerary", auth, async (req, res, next) => {
       phone,
       website,
       email,
-      provider,
+      //provider,
       confirmationNumber,
       totalCost,
       numberOfGuests,
-      locationName,
-      activityType,
-      googlePlaceId,
+      //locationName,
+      //activityType,
+      //googlePlaceId,
       notes,
       details = {},
     } = req.body;
@@ -676,6 +667,7 @@ router.post("/:tripId/itinerary", auth, async (req, res, next) => {
     // Create base itinerary item
     const item = await prisma.itinerary_items.create({
       data: {
+        // UPDATE DB: Uncomment here when db aligned with frontend or vv
         trip_id: tripId,
         item_type: itemType,
         title: title,
@@ -687,18 +679,19 @@ router.post("/:tripId/itinerary", auth, async (req, res, next) => {
         phone: phone ?? null,
         website: website ?? null,
         email: email ?? null,
-        provider: provider ?? null,
+        //provider: provider ?? null,
         confirmation_number: confirmationNumber ?? null,
         total_cost: cleanTotalCost,
         number_of_guests: cleanNumOfGuests,
-        location_name: locationName ?? null,
-        activity_type: activityType ?? null,
-        google_place_id: googlePlaceId ?? null,
+        //location_name: locationName ?? null,
+        //activity_type: activityType ?? null,
+        //google_place_id: googlePlaceId ?? null,
         notes: notes ?? null,
         created_by: userId,
         updated_by: userId,
       },
       select: {
+        // UPDATE DB: Uncomment here when db aligned with frontend or vv
         id: true,
         item_type: true,
         title: true,
@@ -710,13 +703,13 @@ router.post("/:tripId/itinerary", auth, async (req, res, next) => {
         phone: true,
         website: true,
         email: true,
-        provider: true,
+        //provider: true,
         confirmation_number: true,
         total_cost: true,
         number_of_guests: true,
-        location_name: true,
-        activity_type: true,
-        google_place_id: true,
+        //location_name: true,
+        //activity_type: true,
+        //google_place_id: true,
         notes: true,
       },
     });
@@ -757,18 +750,21 @@ router.post("/:tripId/itinerary", auth, async (req, res, next) => {
         };
         break;
       }
-      case "carRental": {
-        const carDetails = details || {};
+      case "car_rental": {
+        const carCreate = details || {};
         carRental = await prisma.car_rental_itinerary.create({
           data: {
             itinerary_item_id: item.id,
-            pickup_location: carDetails.pickupLocation.location ?? null,
-            pickup_address: carDetails.pickupAddress.address ?? null,
-            pickup_phone: carDetails.pickupPhone.phone ?? null,
-            dropoff_location: carDetails.dropoffLocation.location ?? null,
-            dropoff_address: carDetails.dropoffAddress.address ?? null,
-            dropoff_phone: carDetails.dropoffPhone.phone ?? null,
-            car_type: carDetails.rentalInfo.carType ?? null,
+            pickup_location: carCreate.pickupLocation?.location ?? null,
+            pickup_address: carCreate.pickupLocation?.address ?? null,
+            pickup_phone: carCreate.pickupLocation?.phone ?? null,
+            dropoff_location: carCreate.dropoffLocation?.location ?? null,
+            dropoff_address: carCreate.dropoffLocation?.address ?? null,
+            dropoff_phone: carCreate.dropoffLocation?.phone ?? null,
+            car_type: carCreate.rentalInfo?.carType ?? null,
+            // UPDATE DB: Uncomment here when db aligned with frontend or vv
+            // mileage_charges: carCreate.rentalInfo?.mileageCharges ?? null,
+            // car_details:     carCreate.rentalInfo?.carDetails     ?? null,
           },
           select: {
             id: true,
@@ -780,18 +776,28 @@ router.post("/:tripId/itinerary", auth, async (req, res, next) => {
             dropoff_address: true,
             dropoff_phone: true,
             car_type: true,
+            // UPDATE DB: Uncomment here when db aligned with frontend or vv
+            //mileage_charges: true,
+            //car_details: true,
           },
         });
         carRental = {
-          id: carRental.id,
-          itineraryItemId: carRental.itinerary_item_id,
-          pickupLocation: carRental.pickup_location,
-          pickupAddress: carRental.pickup_address,
-          pickupPhone: carRental.pickup_phone,
-          dropoffLocation: carRental.dropoff_location,
-          dropoffAddress: carRental.dropoff_address,
-          dropoffPhone: carRental.dropoff_phone,
-          carType: carRental.car_type,
+          pickupLocation: {
+            location: carCreate.pickup_location,
+            address: carCreate.pickup_address,
+            phone: carCreate.pickup_phone,
+          },
+          dropoffLocation: {
+            location: carCreate.dropoff_location,
+            address: carCreate.dropoff_address,
+            phone: carCreate.dropoff_phone,
+          },
+          rentalInfo: {
+            carType: carCreate.car_type,
+            // UPDATE DB: When added to the DB, add carCreate.mileage_charges, carCreate.car_details,
+            mileageCharges: null,
+            carDetails: null,
+          }
         };
         break;
       }
@@ -836,8 +842,9 @@ router.post("/:tripId/itinerary", auth, async (req, res, next) => {
 
         activity = await prisma.activity_itinerary.create({
           data: {
+            // UPDATE DB: Uncomment here when db aligned with frontend or vv
             itinerary_item_id: item.id,
-            activity_type: activityDetails.activityType ?? null,
+            /*activity_type: activityDetails.activityType ?? null,
             difficulty_level: activityDetails.difficultyLevel ?? null,
             meeting_location: activityDetails.meetingLocation ?? null,
             meeting_instructions: activityDetails.meetingInstructions ?? null,
@@ -851,11 +858,13 @@ router.post("/:tripId/itinerary", auth, async (req, res, next) => {
             additional_costs: activityDetails.additionalCosts ?? null,
             additional_costs_description:
               activityDetails.additionalCostsDescription ?? null,
+              */
           },
           select: {
+            // UPDATE DB: Uncomment here when db aligned with frontend or vv
             id: true,
             itinerary_item_id: true,
-            activity_type: true,
+            /*activity_type: true,
             difficulty_level: true,
             meeting_location: true,
             meeting_instructions: true,
@@ -868,10 +877,12 @@ router.post("/:tripId/itinerary", auth, async (req, res, next) => {
             booking_required: true,
             additional_costs: true,
             additional_costs_description: true,
+            */
           },
         });
         activity = {
-          id: activity.id,
+          // UPDATE DB: Delete current and uncomment here when db aligned with frontend or vv
+          /*id: activity.id,
           itineraryItemId: activity.itinerary_item_id,
           activityType: activity.activity_type,
           difficultyLevel: activity.difficulty_level,
@@ -886,6 +897,22 @@ router.post("/:tripId/itinerary", auth, async (req, res, next) => {
           bookingRequired: activity.booking_required,
           additionalCosts: activity.additional_costs,
           additionalCostsDescription: activity.additional_costs_description,
+          */
+          id: activity.id,
+          itineraryItemId: activity.itinerary_item_id,
+          activityType: null,
+          difficultyLevel: null,
+          meetingLocation: null,
+          meetingInstructions: null,
+          certificationRequired: null,
+          certificationDetails: null,
+          minAge: null,
+          maxParticipants: null,
+          equipmentNeeded: null,
+          dressCode: null,
+          bookingRequired: null,
+          additionalCosts: null,
+          additionalCostsDescription: null,
         };
         break;
       }
@@ -905,6 +932,7 @@ router.post("/:tripId/itinerary", auth, async (req, res, next) => {
     if (activity) responseDetails = activity;
 
     const response = {
+      // UPDATE DB: Uncomment here when db aligned with frontend or vv
       id: item.id,
       itemType: item.item_type,
       title: item.title,
@@ -918,15 +946,15 @@ router.post("/:tripId/itinerary", auth, async (req, res, next) => {
       phone: item.phone,
       website: item.website,
       email: item.email,
-      provider: item.provider,
+      //provider: item.provider,
       confirmationNumber: item.confirmation_number,
       totalCost: item.total_cost,
       numberOfGuests: item.number_of_guests,
-      locationName: item.location_name,
-      activityType: item.activity_type,
-      googlePlaceId: item.google_place_id,
+      //locationName: item.location_name,
+      //activityType: item.activity_type,
+      //googlePlaceId: item.google_place_id,
       notes: item.notes,
-      responseDetails,
+      details: responseDetails,
     };
 
     res.status(201).json(response);
@@ -971,6 +999,7 @@ router.put("/:tripId/itinerary/:itemId", auth, async (req, res, next) => {
     }
 
     const {
+      // UPDATE DB: Uncomment here when db aligned with frontend or vv
       title,
       description,
       startDate,
@@ -982,13 +1011,13 @@ router.put("/:tripId/itinerary/:itemId", auth, async (req, res, next) => {
       phone,
       website,
       email,
-      provider,
+      //provider,
       confirmationNumber,
       totalCost,
       numberOfGuests,
-      locationName,
-      activityType,
-      googlePlaceId,
+      //locationName,
+      //activityType,
+      //googlePlaceId,
       notes,
       details = {},
     } = req.body;
@@ -1000,6 +1029,7 @@ router.put("/:tripId/itinerary/:itemId", auth, async (req, res, next) => {
     const updated = await prisma.itinerary_items.update({
       where: { id: itemId },
       data: {
+        // UPDATE DB: Uncomment here when db aligned with frontend or vv
         title: title ?? existing.title,
         description: description ?? existing.description,
         start_time: startDateTime ? new Date(startDateTime) : existing.start_time,
@@ -1009,18 +1039,19 @@ router.put("/:tripId/itinerary/:itemId", auth, async (req, res, next) => {
         phone: phone ?? existing.phone,
         website: website ?? existing.website,
         email: email ?? existing.email,
-        provider: provider ?? existing.provider,
+        //provider: provider ?? existing.provider,
         confirmation_number: confirmationNumber ?? existing.confirmation_number,
         total_cost: totalCost ?? existing.total_cost,
         number_of_guests: numberOfGuests ?? existing.number_of_guests,
-        location_name: locationName ?? existing.location_name,
-        activity_type: activityType ?? existing.activity_type,
-        google_place_id: googlePlaceId ?? existing.google_place_id,
+        //location_name: locationName ?? existing.location_name,
+        //activity_type: activityType ?? existing.activity_type,
+        //google_place_id: googlePlaceId ?? existing.google_place_id,
         notes: notes ?? existing.notes,
         updated_by: userId,
         updated_at: new Date(),
       },
       select: {
+        // UPDATE DB: Uncomment here when db aligned with frontend or vv
         id: true,
         item_type: true,
         title: true,
@@ -1032,13 +1063,13 @@ router.put("/:tripId/itinerary/:itemId", auth, async (req, res, next) => {
         phone: true,
         website: true,
         email: true,
-        provider: true,
+        //provider: true,
         confirmation_number: true,
         total_cost: true,
         number_of_guests: true,
-        location_name: true,
-        activity_type: true,
-        google_place_id: true,
+        //location_name: true,
+        //activity_type: true,
+        //google_place_id: true,
         notes: true,
       },
     });
@@ -1123,9 +1154,9 @@ router.put("/:tripId/itinerary/:itemId", auth, async (req, res, next) => {
         }
         break;
       }
-      case "carRental": {
-        const carDetails = details || {};
-        if (Object.keys(carDetails).length > 0) {
+      case "car_rental": {
+        const carUpdates = details || {};
+        if (Object.keys(carUpdates).length > 0) {
           const existingCar = await prisma.car_rental_itinerary.findFirst({
             where: { itinerary_item_id: itemId },
           });
@@ -1135,20 +1166,24 @@ router.put("/:tripId/itinerary/:itemId", auth, async (req, res, next) => {
               where: { id: existingCar.id },
               data: {
                 pickup_location:
-                  carDetails.pickupLocation.location ?? existingCar.pickup_location,
+                  carUpdates.pickupLocation?.location ?? existingCar.pickup_location,
                 pickup_address:
-                  carDetails.pickupAddress.address ?? existingCar.pickup_address,
+                  carUpdates.pickupLocation?.address ?? existingCar.pickup_address,
                 pickup_phone:
-                  carDetails.pickupPhone.phone ?? existingCar.pickup_phone,
+                  carUpdates.pickupLocation?.phone ?? existingCar.pickup_phone,
                 dropoff_location:
-                  carDetails.dropoffLocation.location ?? existingCar.dropoff_location,
+                  carUpdates.dropoffLocation?.location ?? existingCar.dropoff_location,
                 dropoff_address:
-                  carDetails.dropoffAddress.address ?? existingCar.dropoff_address,
+                  carUpdates.dropoffLocation?.address ?? existingCar.dropoff_address,
                 dropoff_phone:
-                  carDetails.dropoffPhone.phone ?? existingCar.dropoff_phone,
-                car_type: carDetails.rentalInfo.carType ?? existingCar.car_type,
+                  carUpdates.dropoffLocation?.phone ?? existingCar.dropoff_phone,
+                car_type: carUpdates.rentalInfo?.carType ?? existingCar.car_type,
+                // UPDATE DB: Uncomment here when db aligned with frontend or vv
+                //mileage_charges: carUpdates.rentalInfo?.mileageCharges ?? existingCar.mileage_charges
+                //car_details: carUpdates.rentalInfo?.carDetails ?? existingCar.car_details
               },
               select: {
+                // UPDATE DB: Uncomment here when db aligned with frontend or vv
                 id: true,
                 itinerary_item_id: true,
                 pickup_location: true,
@@ -1158,32 +1193,44 @@ router.put("/:tripId/itinerary/:itemId", auth, async (req, res, next) => {
                 dropoff_address: true,
                 dropoff_phone: true,
                 car_type: true,
+                //mileage_charges: true,
+                //car_details: true,
               },
             });
             carRental = {
-              id: c.id,
-              itineraryItemId: c.itinerary_item_id,
-              pickupLocation: c.pickup_location,
-              pickupAddress: c.pickup_address,
-              pickupPhone: c.pickup_phone,
-              dropoffLocation: c.dropoff_location,
-              dropoffAddress: c.dropoff_address,
-              dropoffPhone: c.dropoff_phone,
-              carType: c.car_type,
+              pickupLocation: {
+                location: c.pickup_location,
+                address: c.pickup_address,
+                phone: c.pickup_phone,
+              },
+              dropoffLocation: {
+                location: c.dropoff_location,
+                address: c.dropoff_address,
+                phone: c.dropoff_phone,
+              },
+              rentalInfo: {
+                carType: c.car_type,
+                mileageCharges: null,
+                carDetails: null,
+              },
             };
           } else {
             const c = await prisma.car_rental_itinerary.create({
               data: {
+                // UPDATE DB: Uncomment here when db aligned with frontend or vv
                 itinerary_item_id: itemId,
-                pickup_location: carDetails.pickupLocation.location ?? null,
-                pickup_address: carDetails.pickupAddress.address ?? null,
-                pickup_phone: carDetails.pickupPhone.phone ?? null,
-                dropoff_location: carDetails.dropoffLocation.location ?? null,
-                dropoff_address: carDetails.dropoffAddress.address ?? null,
-                dropoff_phone: carDetails.dropoffPhone.phone ?? null,
-                car_type: carDetails.rentalInfo.carType ?? null,
+                pickup_location: carUpdates.pickupLocation?.location ?? null,
+                pickup_address: carUpdates.pickupLocation?.address ?? null,
+                pickup_phone: carUpdates.pickupLocation?.phone ?? null,
+                dropoff_location: carUpdates.dropoffLocation?.location ?? null,
+                dropoff_address: carUpdates.dropoffLocation?.address ?? null,
+                dropoff_phone: carUpdates.dropoffLocation?.phone ?? null,
+                car_type: carUpdates.rentalInfo?.carType ?? null,
+                //mileage_charges: carUpdates.rentalInfo?.mileageCharges ?? null,
+                //car_details: carUpdates.rentalInfo?.carDetails ?? null,
               },
               select: {
+                // UPDATE DB: Uncomment here when db aligned with frontend or vv
                 id: true,
                 itinerary_item_id: true,
                 pickup_location: true,
@@ -1193,18 +1240,26 @@ router.put("/:tripId/itinerary/:itemId", auth, async (req, res, next) => {
                 dropoff_address: true,
                 dropoff_phone: true,
                 car_type: true,
+                //mileage_charges: true,
+                //car_details: true,
               },
             });
             carRental = {
-              id: c.id,
-              itineraryItemId: c.itinerary_item_id,
-              pickupLocation: c.pickup_location,
-              pickupAddress: c.pickup_address,
-              pickupPhone: c.pickup_phone,
-              dropoffLocation: c.dropoff_location,
-              dropoffAddress: c.dropoff_address,
-              dropoffPhone: c.dropoff_phone,
-              carType: c.car_type,
+              pickupLocation: {
+                location: c.pickup_location,
+                address: c.pickup_address,
+                phone: c.pickup_phone,
+              },
+              dropoffLocation: {
+                location: c.dropoff_location,
+                address: c.dropoff_address,
+                phone: c.dropoff_phone,
+              },
+              rentalInfo: {
+                carType: c.car_type,
+                mileageCharges: null,
+                carDetails: null,
+              },
             };
           }
         }
@@ -1278,6 +1333,10 @@ router.put("/:tripId/itinerary/:itemId", auth, async (req, res, next) => {
       }
       case "activity": {
         const activityDetails = details || {};
+        const cleanCertReq = parseBoolean(activityDetails.certificationRequired);
+        const cleanBookingReq = parseBoolean(activityDetails.bookingRequired);
+        const cleanMinAge = parseNumber(activityDetails.minAge);
+        const cleanMaxPpl = parseNumber(activityDetails.maxParticipants);
         if (Object.keys(activityDetails).length > 0) {
           const existingActivity = await prisma.activity_itinerary.findFirst({
             where: { itinerary_item_id: itemId },
@@ -1287,6 +1346,8 @@ router.put("/:tripId/itinerary/:itemId", auth, async (req, res, next) => {
             const a = await prisma.activity_itinerary.update({
               where: { id: existingActivity.id },
               data: {
+                // UPDATE DB: Uncomment here when db aligned with frontend or vv
+                /*
                 activity_type:
                   activityDetails.activityType ??
                   existingActivity.activity_type,
@@ -1323,10 +1384,13 @@ router.put("/:tripId/itinerary/:itemId", auth, async (req, res, next) => {
                 additional_costs_description:
                   activityDetails.additionalCostsDescription ??
                   existingActivity.additional_costs_description,
+                  */
               },
               select: {
+                // UPDATE DB: Uncomment here when db aligned with frontend or vv
                 id: true,
                 itinerary_item_id: true,
+                /*
                 activity_type: true,
                 difficulty_level: true,
                 meeting_location: true,
@@ -1340,11 +1404,14 @@ router.put("/:tripId/itinerary/:itemId", auth, async (req, res, next) => {
                 booking_required: true,
                 additional_costs: true,
                 additional_costs_description: true,
+                */
               },
             });
             activity = {
+              // UPDATE DB: Uncomment here when db aligned with frontend or vv
               id: a.id,
               itineraryItemId: a.itinerary_item_id,
+              /*
               activityType: a.activity_type,
               difficultyLevel: a.difficulty_level,
               meetingLocation: a.meeting_location,
@@ -1358,11 +1425,14 @@ router.put("/:tripId/itinerary/:itemId", auth, async (req, res, next) => {
               bookingRequired: a.booking_required,
               additionalCosts: a.additional_costs,
               additionalCostsDescription: a.additional_costs_description,
+              */
             };
           } else {
             const a = await prisma.activity_itinerary.create({
               data: {
+                // UPDATE DB: Uncomment here when db aligned with frontend or vv
                 itinerary_item_id: itemId,
+                /*
                 activity_type: activityDetails.activityType ?? null,
                 difficulty_level: activityDetails.difficultyLevel ?? null,
                 meeting_location: activityDetails.meetingLocation ?? null,
@@ -1380,10 +1450,13 @@ router.put("/:tripId/itinerary/:itemId", auth, async (req, res, next) => {
                 additional_costs: activityDetails.additionalCosts ?? null,
                 additional_costs_description:
                   activityDetails.additionalCostsDescription ?? null,
+                  */
               },
               select: {
+                // UPDATE DB: Uncomment here when db aligned with frontend or vv
                 id: true,
                 itinerary_item_id: true,
+                /*
                 activity_type: true,
                 difficulty_level: true,
                 meeting_location: true,
@@ -1397,11 +1470,14 @@ router.put("/:tripId/itinerary/:itemId", auth, async (req, res, next) => {
                 booking_required: true,
                 additional_costs: true,
                 additional_costs_description: true,
+                */
               },
             });
             activity = {
+              // UPDATE DB: Uncomment here when db aligned with frontend or vv
               id: a.id,
               itineraryItemId: a.itinerary_item_id,
+              /*
               activityType: a.activity_type,
               difficultyLevel: a.difficulty_level,
               meetingLocation: a.meeting_location,
@@ -1415,6 +1491,7 @@ router.put("/:tripId/itinerary/:itemId", auth, async (req, res, next) => {
               bookingRequired: a.booking_required,
               additionalCosts: a.additional_costs,
               additionalCostsDescription: a.additional_costs_description,
+              */
             };
           }
         }
@@ -1435,6 +1512,7 @@ router.put("/:tripId/itinerary/:itemId", auth, async (req, res, next) => {
     if (activity) responseDetails = activity;
 
     const response = {
+      // UPDATE DB: Uncomment here when db aligned with frontend or vv
       id: updated.id,
       itemType: updated.item_type,
       title: updated.title,
@@ -1448,15 +1526,15 @@ router.put("/:tripId/itinerary/:itemId", auth, async (req, res, next) => {
       phone: updated.phone,
       website: updated.website,
       email: updated.email,
-      provider: updated.provider,
+      //provider: updated.provider,
       confirmationNumber: updated.confirmation_number,
       totalCost: updated.total_cost,
       numberOfGuests: updated.number_of_guests,
-      locationName: updated.location_name,
-      activityType: updated.activity_type,
-      googlePlaceId: updated.google_place_id,
+      //locationName: updated.location_name,
+      //activityType: updated.activity_type,
+      //googlePlaceId: updated.google_place_id,
       notes: updated.notes,
-      responseDetails
+      details: responseDetails
     };
 
     res.json(response);
